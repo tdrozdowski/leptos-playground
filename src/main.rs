@@ -7,7 +7,7 @@ fn main() {
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 struct DatabaseEntry {
     key: String,
-    value: i32,
+    value: RwSignal<i32>,
 }
 
 #[component]
@@ -15,22 +15,22 @@ fn App() -> impl IntoView {
     let (data, set_data) = create_signal(vec![
         DatabaseEntry {
             key: "one".to_string(),
-            value: 1,
+            value: create_rw_signal(10),
         },
         DatabaseEntry {
             key: "two".to_string(),
-            value: 2,
+            value: create_rw_signal(20),
         },
         DatabaseEntry {
             key: "three".to_string(),
-            value: 3,
+            value: create_rw_signal(30)
         },
     ]);
     view! {
         <button on:click=move |_| {
             set_data.update(|data| {
                 for row in data {
-                    row.value *= 2;
+                    row.value.update(|n| *n *=2);
                 }
             });
             logging::log!("data: {:?}", data.get());
