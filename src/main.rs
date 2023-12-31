@@ -4,7 +4,7 @@ fn main() {
     leptos::mount_to_body(|| view! {<App/>})
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 struct DatabaseEntry {
     key: String,
     value: i32,
@@ -12,41 +12,38 @@ struct DatabaseEntry {
 
 #[component]
 fn App() -> impl IntoView {
-    let (count, set_count) = create_signal(0);
-    let double_count = move || count.get() * 2;
-    let length = 5;
-    let values = vec![1, 2, 3, 4, 5];
-    let counters = (0..length).map(|idx| create_signal(idx));
-    let counter_buttons = counters.map(|(count, set_count)| {
-        view! {
-            <button on:click=move |_| { set_count.update(|n| *n += 1);}
-            >
-                {move || count.get()}
-            </button>
-        }
-    }).collect_view();
-
+    let (data, set_data) = create_signal(vec![
+        DatabaseEntry {
+            key: "one".to_string(),
+            value: 1,
+        },
+        DatabaseEntry {
+            key: "two".to_string(),
+            value: 2,
+        },
+        DatabaseEntry {
+            key: "three".to_string(),
+            value: 3,
+        },
+    ]);
     view! {
-        <div>
-            <button on:click=move |_| { set_count.update(|n| *n += 1);}
-                    class:red=move || count.get() % 2 == 1
+        <button on:click=move |_| {
+            set_data.update(|data| {
+                for row in data {
+                    row.value *= 2;
+                }
+            });
+            logging::log!("data: {:?}", data.get());
+        }>
+        "Update Values"
+        </button>
+        <For
+            each = move || data.get()
+            key = |state| state.clone()
+            let:child
         >
-                "Click me:"
-                {move || count.get()}
-            </button>
-        </div>
-        <ProgressBar progress=count/>
-        <ProgressBar progress=double_count/>
-        <p>
-            {values.clone()}
-        </p>
-        <ul>
-            {values.into_iter()
-                .map(|v| view!{<li>{v}</li>})
-                .collect_view()
-            }
-        </ul>
-        <ul>{counter_buttons}</ul>
+            <p>{move || child.value}</p>
+        </For>
     }
 }
 
