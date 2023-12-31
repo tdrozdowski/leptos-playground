@@ -1,67 +1,34 @@
 use leptos::*;
+use leptos::ev::SubmitEvent;
+use leptos::html::Input;
 
 fn main() {
     leptos::mount_to_body(|| view! {<App/>})
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-struct DatabaseEntry {
-    key: String,
-    value: i32,
-}
 
 #[component]
 fn App() -> impl IntoView {
-    let (data, set_data) = create_signal(vec![
-        DatabaseEntry {
-            key: "one".to_string(),
-            value: 10,
-        },
-        DatabaseEntry {
-            key: "two".to_string(),
-            value: 20,
-        },
-        DatabaseEntry {
-            key: "three".to_string(),
-            value: 30
-        },
-    ]);
+    let (name, set_name) = create_signal("Uncontrolled".to_string());
+    let input_element: NodeRef<Input> = create_node_ref();
+
+    let on_submit = move |ev: SubmitEvent| {
+        ev.prevent_default();
+        let value = input_element.get()
+            .expect("<input> to exist")
+            .value();
+        set_name.set(value);
+    };
     view! {
-        <button on:click=move |_| {
-            set_data.update(|data| {
-                for row in data {
-                    row.value *=2;
-                }
-            });
-            logging::log!("data: {:?}", data.get());
-        }>
-        "Update Values"
-        </button>
-        <For
-            each = move || data.get().into_iter().enumerate()
-            key = |(_, state)| state.key.clone()
-            children = move |(index, _)| {
-               let value = create_memo(move |_| {
-                  data.with(|data| data.get(index).map(|d| d.value).unwrap_or(0))
-                });
-                view! {
-                    <p>{value}</p>
-                }
-            }/>
+        <form on:submit=on_submit>
+            <input type="text"
+                value=name
+                node_ref=input_element
+            />
+            <input type="submit" value="Submit"/>
+        </form>
+        <p>"Name is: "{name}</p>
     }
+
+
 }
-
-#[component]
-fn ProgressBar(
-    #[prop(default = 100)]
-    max: i32,
-    #[prop(into)]
-    progress : Signal<i32>
-) -> impl IntoView
-{
-    view! {
-        <progress max=max value=progress/>
-    }
-}
-
-
