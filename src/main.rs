@@ -1,4 +1,3 @@
-use leptos::ev::MouseEvent;
 use leptos::*;
 
 fn main() {
@@ -7,68 +6,45 @@ fn main() {
 
 #[component]
 fn App() -> impl IntoView {
-    let (toggled, set_toggled) = create_signal(false);
-
-    provide_context(set_toggled);
-
     view! {
-        <p>"Toggled? " {toggled}</p>
-        <Layout />
+        <TakesChildren render_prop=|| view! {<p>"Hi There!"</p>}>
+            "Some Text"
+            <span>"A span"</span>
+        </TakesChildren>
     }
 }
 
 #[component]
-fn ButtonA(setter: WriteSignal<bool>) -> impl IntoView {
-    view! {
-        <button
-            on:click=move |_| setter.update(|value| *value = !*value)
-        >
-        "Toggle"
-        </button>
-    }
-}
-
-#[component]
-fn ButtonB<F>(on_click: F) -> impl IntoView
+fn TakesChildren<F, IV>(render_prop: F, children: Children) -> impl IntoView
 where
-    F: Fn(MouseEvent) + 'static,
+    F: Fn() -> IV,
+    IV: IntoView,
 {
     view! {
-        <button on:click=on_click>
-            "Toggle"
-        </button>
+        <h2>"Render Prop"</h2>
+        {render_prop()}
+
+        <h2>"Children"</h2>
+        {children()}
+
+        <h3>"Wraps Children"</h3>
+        <WrapsChildren>
+            "A"
+            "B"
+            "C"
+        </WrapsChildren>
     }
 }
 
 #[component]
-fn Layout() -> impl IntoView {
-    view! {
-        <header>
-            <h1>"My Page"</h1>
-        </header>
-        <main>
-            <Content/>
-        </main>
-    }
-}
+fn WrapsChildren(children: Children) -> impl IntoView {
+    let children = children()
+        .nodes
+        .into_iter()
+        .map(|child| view! {<li>{child}</li>})
+        .collect_view();
 
-#[component]
-fn Content() -> impl IntoView {
     view! {
-        <div class="content">
-            <ButtonD/>
-        </div>
-    }
-}
-
-#[component]
-fn ButtonD() -> impl IntoView {
-    let setter = use_context::<WriteSignal<bool>>().expect("to have found the setter provided.");
-    view! {
-        <button
-            on:click=move |_| setter.update(|value| *value = !*value)
-        >
-            "Toggle"
-        </button>
+        <ul>{children}</ul>
     }
 }
