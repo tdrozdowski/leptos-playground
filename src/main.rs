@@ -1,50 +1,53 @@
+use gloo_timers::future::TimeoutFuture;
 use leptos::*;
 
 fn main() {
     leptos::mount_to_body(|| view! {<App/>})
 }
 
+async fn load_data(value: i32) -> i32 {
+    TimeoutFuture::new(1_000).await;
+    value * 10
+}
+
 #[component]
 fn App() -> impl IntoView {
+    let (count, set_count) = create_signal(0);
+    let async_data = create_resource(move || count.get(), |value| async move { load_data(value).await });
+    let stable = create_resource(|| (), |_| async move { load_data(1).await });
+    let async_result = move || {
+        async_data
+            .get()
+            .map(|value| format!("Server returned {value:?}"))
+            .unwrap_or_else(|| "Loading....".into())
+    };
+    let loading = async_data.loading();
+    let is_loading = move || {
+        if loading.get() {
+            "Loading..."
+        } else {
+            "Idle"
+        }
+    };
     view! {
-        <TakesChildren render_prop=|| view! {<p>"Hi There!"</p>}>
-            "Some Text"
-            <span>"A span"</span>
-        </TakesChildren>
-    }
-}
-
-#[component]
-fn TakesChildren<F, IV>(render_prop: F, children: Children) -> impl IntoView
-where
-    F: Fn() -> IV,
-    IV: IntoView,
-{
-    view! {
-        <h2>"Render Prop"</h2>
-        {render_prop()}
-
-        <h2>"Children"</h2>
-        {children()}
-
-        <h3>"Wraps Children"</h3>
-        <WrapsChildren>
-            "A"
-            "B"
-            "C"
-        </WrapsChildren>
-    }
-}
-
-#[component]
-fn WrapsChildren(children: Children) -> impl IntoView {
-    let children = children()
-        .nodes
-        .into_iter()
-        .map(|child| view! {<li>{child}</li>})
-        .collect_view();
-
-    view! {
-        <ul>{children}</ul>
+        <button
+            on:click=move |_| {
+                set_count.update(|n| *n += 1);
+            }
+        >
+            "Click Me"
+        </button>
+        <p>
+            <code>Stable:</code>": " {move || stable.get()}
+        </p>
+        <p>
+            <code>Count:</code>": " {count}
+        </p>
+        <p>
+            <code>async_value</code>": "
+            {async_result}
+            <br/>
+            {is_loading}
+        </p>
     }
 }
