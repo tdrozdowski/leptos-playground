@@ -1,3 +1,4 @@
+use leptos::ev::MouseEvent;
 use leptos::*;
 
 fn main() {
@@ -6,28 +7,68 @@ fn main() {
 
 #[component]
 fn App() -> impl IntoView {
-    let (value, set_value) = create_signal(Ok(0));
-    let on_input = move |ev| set_value.set(event_target_value(&ev).parse::<i32>());
+    let (toggled, set_toggled) = create_signal(false);
+
+    provide_context(set_toggled);
+
     view! {
-        <h1>"Error Handling"</h1>
-        <label>"Type a number (or something that is not a number!)"
-            <input type="number" on:input=on_input/>
-            <ErrorBoundary
-                fallback=|errors| view! {
-                    <div class="error">
-                        <p>"Not a number! Errors:"</p>
-                        <ul>
-                            { move || errors.get()
-                                        .into_iter()
-                                        .map(|(_, e)| view! {<li>{e.to_string()}</li>})
-                                        .collect::<Vec<_>>()
-                            }
-                        </ul>
-                    </div>
-                }
-            >
-                <p>"You entered: "<strong>{value}</strong></p>
-            </ErrorBoundary>
-        </label>
+        <p>"Toggled? " {toggled}</p>
+        <Layout />
+    }
+}
+
+#[component]
+fn ButtonA(setter: WriteSignal<bool>) -> impl IntoView {
+    view! {
+        <button
+            on:click=move |_| setter.update(|value| *value = !*value)
+        >
+        "Toggle"
+        </button>
+    }
+}
+
+#[component]
+fn ButtonB<F>(on_click: F) -> impl IntoView
+where
+    F: Fn(MouseEvent) + 'static,
+{
+    view! {
+        <button on:click=on_click>
+            "Toggle"
+        </button>
+    }
+}
+
+#[component]
+fn Layout() -> impl IntoView {
+    view! {
+        <header>
+            <h1>"My Page"</h1>
+        </header>
+        <main>
+            <Content/>
+        </main>
+    }
+}
+
+#[component]
+fn Content() -> impl IntoView {
+    view! {
+        <div class="content">
+            <ButtonD/>
+        </div>
+    }
+}
+
+#[component]
+fn ButtonD() -> impl IntoView {
+    let setter = use_context::<WriteSignal<bool>>().expect("to have found the setter provided.");
+    view! {
+        <button
+            on:click=move |_| setter.update(|value| *value = !*value)
+        >
+            "Toggle"
+        </button>
     }
 }
