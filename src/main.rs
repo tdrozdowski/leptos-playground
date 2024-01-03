@@ -1,55 +1,85 @@
-use gloo_timers::future::TimeoutFuture;
 use leptos::*;
+use leptos_router::*;
 
 fn main() {
     leptos::mount_to_body(|| view! {<App/>})
 }
 
-async fn important_api_call(id: usize) -> String {
-    TimeoutFuture::new(1_000).await;
-    match id {
-        0 => "Alice",
-        1 => "Bob",
-        2 => "Carol",
-        _ => "User Not Found",
-    }.to_string()
-}
-
 #[component]
 fn App() -> impl IntoView {
-    let (tab, set_tab) = create_signal(0);
-    let user_data = create_resource(move || tab.get(),  |tab| async move  { important_api_call(tab).await});
     view! {
-        <div class="buttons">
-            <button
-                on:click=move |_| set_tab.set(0)
-                class:selected=move || tab.get() == 0>
-                "Tab A"
-            </button>
-            <button
-                on:click=move |_| set_tab.set(1)
-                class:selected=move || tab.get() == 1>
-                "Tab B"
-            </button>
-            <button
-                on:click=move |_| set_tab.set(2)
-                class:selected=move || tab.get() == 2>
-                "Tab C"
-            </button>
-            {move || if user_data.loading().get() {
-                        "Loading..."
-                    } else {
-                        ""
-                    }
-            }
-        </div>
-        <Transition
-            fallback=move || view! {<p>"Loading..."</p>}
-        >
-            <p>
-                {move || user_data.get()}
-            </p>
-        </Transition>
+        <Router>
+            <h1>"Contact App"</h1>
+            <nav>
+                <h2>"Navigation"</h2>
+                <a href="/">"Home"</a>
+                <a href="/contacts">"Contacts"</a>
+            </nav>
+            <main>
+                <Routes>
+                    <Route path="/" view=|| view!{
+                        <h3>"Home"</h3>
+                    }/>
+                    <Route path="/contacts" view=ContactList>
+                        <Route path=":id" view=ContactInfo>
+                            <Route path="" view=|| view! {
+                                <div class="tab">
+                                    "(Contact info)"
+                                </div>
+                             }/>
+                            <Route path="conversations" view=|| view! {
+                                <div class="tab">
+                                    "(Conversations)"
+                                </div>
+                            }/>
+                        </Route>
+                        <Route path="" view=|| view! {
+                            <div class="select-user">
+                                "Select a user to view contact info."
+                            </div>
+                        }/>
+                    </Route>
+                </Routes>
+            </main>
+        </Router>
     }
+}
 
+
+#[component]
+fn ContactList() -> impl IntoView {
+    view! {
+        <div class="contact-list">
+            <div class="contact-list-contacts">
+                <h3>"Contacts"</h3>
+                <A href="alice">"Alice"</A>
+                <A href="bob">"Bob"</A>
+                <A href="steve">"Steve"</A>
+            </div>
+            <Outlet/>
+        </div>
+    }
+}
+#[component]
+fn ContactInfo() -> impl IntoView {
+    let params = use_params_map();
+    let id = move || params.with(|p| p.get("id").cloned().unwrap_or_default());
+
+    let name = move || match id().as_str() {
+        "alice" => "Alice",
+        "bob" => "Bob",
+        "steve" => "Steve",
+        _ => "User Not Found",
+    };
+
+    view! {
+        <div class="contact-info">
+            <h4>{name}</h4>
+            <div class="tabs">
+                <A href="" exact=true>"Contact Info"</A>
+                <A href="conversations">"Conversations"</A>
+            </div>
+            <Outlet/>
+        </div>
+    }
 }
